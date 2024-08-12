@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protobuf Client</title>
+    <script src="http://localhost:3000/protobuf.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            protobuf.load("http://localhost:3000/chat.proto", (err, root) => {
+                if (err) throw err;
+
+                const ChatMessage = root.lookupType("ChatMessage");
+
+                const ws = new WebSocket("ws://localhost:3000");
+
+                ws.onopen = () => {
+                    console.log("WebSocket connection opened");
+
+                    document.getElementById("sendMessage").addEventListener("click", () => {
+                        const message = ChatMessage.create({
+                            chatId: "12345",
+                            systemPrompt: "Hello",
+                            chatModel: "GPT-4",
+                            messages: [
+                                { 
+                                    messageContent: "Hi there!", 
+                                    userType: 1
+                                },
+                                {
+                                    messageContent: "How are you?",
+                                    userType: 2
+                                },
+                                {
+                                    messageContent: "I'm fine, thank you!",
+                                    userType: 1
+                                }
+                            ]
+                        });
+
+                        const buffer = ChatMessage.encode(message).finish();
+                        ws.send(buffer);
+                    });
+                };
+
+                ws.onmessage = event => {
+                    const blob = event.data;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const data = new Uint8Array(reader.result);
+                        const message = ChatMessage.decode(data);
+                        console.log("Server response:", message);
+                    };
+                    reader.readAsArrayBuffer(blob);
+                };
+
+                ws.onerror = error => {
+                    console.error("WebSocket error:", error);
+                };
+
+                ws.onclose = () => {
+                    console.log("WebSocket connection closed");
+                };
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Protobuf Client</h1>
+    <button id="sendMessage">Send Message</button>
+</body>
+</html>

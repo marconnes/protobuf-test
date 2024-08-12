@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message ChatMessage {
+    string chatId = 1;
+    string systemPrompt = 2;
+    string chatModel = 3;
+    repeated Message messages = 4;
+}
+
+message Message {
+    string messageContent = 1;
+    int32 userType = 2;
+}
