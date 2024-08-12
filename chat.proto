@@ -9,5 +9,5 @@ message ChatMessage {
 
 message Message {
     string messageContent = 1;
-    int32 userType = 2;
+    optional int32 userType = 2;
 }

@@ -11,6 +11,7 @@
                 if (err) throw err;
 
                 const ChatMessage = root.lookupType("ChatMessage");
+                const Message = root.lookupType("Message");
 
                 const ws = new WebSocket("ws://localhost:3000");
 
@@ -39,7 +40,11 @@
                         });
 
                         const buffer = ChatMessage.encode(message).finish();
-                        ws.send(buffer);
+                        const messageWithOperation = new Uint8Array(1 + buffer.length);
+                        messageWithOperation[0] = 0x01; // Operação 0x01: Enviar ChatMessage
+                        messageWithOperation.set(buffer, 1);
+
+                        ws.send(messageWithOperation);
                     });
                 };
 
@@ -48,8 +53,14 @@
                     const reader = new FileReader();
                     reader.onload = () => {
                         const data = new Uint8Array(reader.result);
-                        const message = ChatMessage.decode(data);
-                        console.log("Server response:", message);
+                        console.log(Array.from(data).map(byte => byte.toString(16).padStart(2, '0')).join(' '))
+                        const operation = data[0];
+                        const messageData = data.slice(1);
+
+                        if (operation === 0x02) { // Operação 0x02: Receber Message
+                            const message = Message.decode(messageData);
+                            console.log("Server response:", message);
+                        }
                     };
                     reader.readAsArrayBuffer(blob);
                 };
